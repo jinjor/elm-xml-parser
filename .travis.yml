@@ -1,0 +1,8 @@
+language: node_js
+node_js:
+  - "4.2"
+before_script:
+  - npm install -g elm
+  - npm install -g elm-test
+  - elm-package install -y
+script: elm-test --seed 673747140
