@@ -52,19 +52,25 @@ children =
             |. tagName
             |. whiteSpace
             |. symbol ">"
-          -- , succeed (::)
-          --     |= element
-          --     |= lazy (\_ -> children)
-        , succeed (::)
-            |= map (String.join "" >> Text) (repeat oneOrMore textString)
-            |= lazy (\_ -> children)
+        , lazy
+            (\_ ->
+                succeed (::)
+                    |= element
+                    |= children
+            )
+        , lazy
+            (\_ ->
+                succeed (::)
+                    |= map (String.join "" >> Text) (repeat oneOrMore textString)
+                    |= children
+            )
         ]
 
 
 textString : Parser String
 textString =
     oneOf
-        [ map String.fromChar escapedChar
+        [ maybeEscapedString
         , nonEscapedString
         ]
 
@@ -74,49 +80,37 @@ nonEscapedString =
     keep oneOrMore (\c -> c /= '<' && c /= '&')
 
 
-escapedChar : Parser Char
-escapedChar =
+maybeEscapedString : Parser String
+maybeEscapedString =
     succeed identity
         |. symbol "&"
-        |= escapedCharHelp
-        |. symbol ";"
-
-
-escapedCharHelp : Parser Char
-escapedCharHelp =
-    oneOf
-        [ succeed Number
-            |. symbol "#"
-        , succeed Word
-        ]
+        |= keep oneOrMore (\c -> c /= '<' && c /= ';')
         |> andThen
-            (\escapeType ->
-                keep oneOrMore (\c -> c /= ';')
-                    |> andThen
-                        (\s ->
-                            case decodeEscape escapeType s of
-                                Ok c ->
-                                    succeed c
+            (\s ->
+                oneOf
+                    [ symbol ";"
+                        |> andThen
+                            (\_ ->
+                                case decodeEscape s of
+                                    Ok c ->
+                                        succeed (String.fromChar c)
 
-                                Err s ->
-                                    fail s
-                        )
+                                    Err e ->
+                                        fail e
+                            )
+                    , succeed ("&" ++ s)
+                    ]
             )
 
 
-type EscapeType
-    = Number
-    | Word
-
-
-decodeEscape : EscapeType -> String -> Result String Char
-decodeEscape escapeType s =
-    case escapeType of
-        Number ->
-            Hex.fromString s
+decodeEscape : String -> Result String Char
+decodeEscape s =
+    case String.uncons s of
+        Just ( '#', hex ) ->
+            Hex.fromString hex
                 |> Result.map Char.fromCode
 
-        Word ->
+        _ ->
             Dict.get s entities
                 |> Result.fromMaybe ("No entity named \"&" ++ s ++ ";\"")
 
