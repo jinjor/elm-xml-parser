@@ -40,7 +40,7 @@ element =
 
 tagName : Parser String
 tagName =
-    keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'')
+    keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
 
 
 children : Parser (List Node)
@@ -139,7 +139,7 @@ attribute =
 
 attributeName : Parser String
 attributeName =
-    keep oneOrMore (\c -> Char.isUpper c || Char.isLower c)
+    keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
 
 
 attributeValue : Parser String

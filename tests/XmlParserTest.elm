@@ -36,20 +36,33 @@ suite =
         , test "tagName unicode 1" <| expectSucceed "<あ/>" (Element "あ" [] [])
         , test "tagName unicode 2" <| expectSucceed "<😄/>" (Element "😄" [] [])
         , test "tagName surrogate pairs" <| expectSucceed "<𩸽/>" (Element "𩸽" [] [])
-        , test "tagName 2" <| expectFail "</>"
-        , test "tagName 3" <| expectFail "<a>"
-        , test "tagName 4" <| expectFail "<1>"
+        , test "tagName fail 1" <| expectFail "</>"
+        , test "tagName fail 2" <| expectFail "<a>"
+        , test "tagName fail 3" <| expectFail "<1>"
         , test "attribute 1" <| expectSucceed """<a b=""/>""" (Element "a" [ Attribute "b" "" ] [])
         , test "attribute 2" <| expectSucceed """<a b="1=</>"/>""" (Element "a" [ Attribute "b" "1=</>" ] [])
-        , test "attribute 3" <| expectFail """<a 1=""/>"""
-        , test "attribute 4" <| expectFail """<a a=/>"""
-        , test "attribute 5" <| expectFail """<a a"="/>"""
-        , test "attribute 6" <| expectFail """<a=""/>"""
+        , test "attribute key number" <| expectSucceed """<a 1=""/>""" (Element "a" [ Attribute "1" "" ] [])
+        , test "attribute key unicode 1" <| expectSucceed """<a あ=""/>""" (Element "a" [ Attribute "あ" "" ] [])
+        , test "attribute key unicode 2" <| expectSucceed """<a 😄=""/>""" (Element "a" [ Attribute "😄" "" ] [])
+        , test "attribute key surrogate pairs" <| expectSucceed """<a 𩸽=""/>""" (Element "a" [ Attribute "𩸽" "" ] [])
+        , test "attribute fail 1" <| expectFail """<a a=/>"""
+        , test "attribute fail 2" <| expectFail """<a a"="/>"""
+        , test "attribute fail 3" <| expectFail """<a=""/>"""
+        , test "attribute fail 4" <| expectFail """<a b c=""/>"""
+        , test "attribute fail 5" <| expectFail """<a= b=""/>"""
+          -- , test "attribute fail same names" <| expectFail """<a b="" b=""/>"""
         , test "closing 1" <| expectSucceed "<a></a>" (Element "a" [] [])
           -- , test "closing 2" <| expectFail "<a></b>"
-        , test "children 1" <| expectSucceed "<a>1</a>" (Element "a" [] [ Text "1" ])
-        , test "children escape 1" <| expectSucceed "<a>&amp;</a>" (Element "a" [] [ Text "&" ])
-        , test "children escape 2" <| expectSucceed "<a>&#x41;</a>" (Element "a" [] [ Text "A" ])
+        , test "children text" <| expectSucceed "<a>1</a>" (Element "a" [] [ Text "1" ])
+        , test "children text escape 1" <| expectSucceed "<a>&amp;</a>" (Element "a" [] [ Text "&" ])
+        , test "children text escape 2" <| expectSucceed "<a>&#x41;</a>" (Element "a" [] [ Text "A" ])
+        , test "children text escape fail" <| expectFail "<a>&&;</a>"
+        , test "children element 1" <| expectSucceed "<a><b/></a>" (Element "a" [] [ Element "b" [] [] ])
+        , test "children element 2" <| expectSucceed "<a><b/><c></c></a>" (Element "a" [] [ Element "b" [] [], Element "c" [] [] ])
+        , test "children element 3" <|
+            expectSucceed "<a>1<b/>2<c>3</c>4</a>"
+                (Element "a" [] [ Text "1", Element "b" [] [], Text "2", Element "c" [] [ Text "3" ], Text "4" ])
+          -- , test "children element fail" <| expectFail "<a><b></a></a>"
         ]
 
 
