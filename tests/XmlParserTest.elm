@@ -36,6 +36,7 @@ suite =
         , test "tagName unicode 1" <| expectSucceed "<あ/>" (Element "あ" [] [])
         , test "tagName unicode 2" <| expectSucceed "<😄/>" (Element "😄" [] [])
         , test "tagName surrogate pairs" <| expectSucceed "<𩸽/>" (Element "𩸽" [] [])
+        , test "tagName namespace" <| expectSucceed "<a:b/>" (Element "a:b" [] [])
         , test "tagName fail 1" <| expectFail "</>"
         , test "tagName fail 2" <| expectFail "<a>"
         , test "tagName fail 3" <| expectFail "<1>"
@@ -47,6 +48,7 @@ suite =
         , test "attribute key unicode 1" <| expectSucceed """<a あ=""/>""" (Element "a" [ Attribute "あ" "" ] [])
         , test "attribute key unicode 2" <| expectSucceed """<a 😄=""/>""" (Element "a" [ Attribute "😄" "" ] [])
         , test "attribute key surrogate pairs" <| expectSucceed """<a 𩸽=""/>""" (Element "a" [ Attribute "𩸽" "" ] [])
+        , test "attribute key namespace" <| expectSucceed """<a b:c=""/>""" (Element "a" [ Attribute "b:c" "" ] [])
         , test "attribute fail 1" <| expectFail """<a a=/>"""
         , test "attribute fail 2" <| expectFail """<a a"="/>"""
         , test "attribute fail 3" <| expectFail """<a=""/>"""
@@ -73,4 +75,3 @@ suite =
 -- CDATA
 -- <?
 -- DOCTYPE
--- &amp, etc.
