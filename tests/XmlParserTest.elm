@@ -48,8 +48,8 @@ suite =
         , test "closing 1" <| expectSucceed "<a></a>" (Element "a" [] [])
           -- , test "closing 2" <| expectFail "<a></b>"
         , test "children 1" <| expectSucceed "<a>1</a>" (Element "a" [] [ Text "1" ])
-        , test "children 2" <| expectSucceed "<a>&amp;</a>" (Element "a" [] [ Text "&" ])
-        , test "children 3" <| expectSucceed "<a>&amp</a>" (Element "a" [] [ Text "&amp" ])
+        , test "children escape 1" <| expectSucceed "<a>&amp;</a>" (Element "a" [] [ Text "&" ])
+        , test "children escape 2" <| expectSucceed "<a>&#x41;</a>" (Element "a" [] [ Text "A" ])
         ]
 
 

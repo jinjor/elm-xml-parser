@@ -98,21 +98,21 @@ maybeEscapedString =
                                     Err e ->
                                         fail e
                             )
-                    , succeed ("&" ++ s)
+                    , fail ("Entities must end with \";\": &" ++ s)
                     ]
             )
 
 
 decodeEscape : String -> Result String Char
 decodeEscape s =
-    case String.uncons s of
-        Just ( '#', hex ) ->
-            Hex.fromString hex
-                |> Result.map Char.fromCode
-
-        _ ->
-            Dict.get s entities
-                |> Result.fromMaybe ("No entity named \"&" ++ s ++ ";\"")
+    if String.startsWith "#x" s then
+        s
+            |> String.dropLeft 2
+            |> Hex.fromString
+            |> Result.map Char.fromCode
+    else
+        Dict.get s entities
+            |> Result.fromMaybe ("No entity named \"&" ++ s ++ ";\" found.")
 
 
 entities : Dict String Char
