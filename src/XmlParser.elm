@@ -56,6 +56,35 @@ processingInstructionValue =
         ]
 
 
+cdata : Parser String
+cdata =
+    succeed identity
+        |. symbol "<![CDATA["
+        |= cdataContent
+        |. symbol "]]>"
+
+
+cdataContent : Parser String
+cdataContent =
+    oneOf
+        [ succeed ""
+            |. symbol "]]>"
+        , symbol "]]"
+            |> andThen
+                (\_ ->
+                    cdataContent
+                        |> map (\tail -> "]]" ++ tail)
+                )
+        , symbol "]"
+            |> andThen
+                (\_ ->
+                    cdataContent
+                        |> map (\tail -> "]" ++ tail)
+                )
+        , keep zeroOrMore (\c -> c /= ']')
+        ]
+
+
 element : Parser Node
 element =
     succeed Element
