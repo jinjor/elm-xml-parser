@@ -2,6 +2,8 @@ module XmlParser exposing (..)
 
 import Parser exposing (..)
 import Char
+import Dict exposing (Dict)
+import Hex
 
 
 type Node
@@ -21,9 +23,7 @@ parse source =
 element : Parser Node
 element =
     succeed Element
-        -- |. whiteSpace
-        |.
-            symbol "<"
+        |. symbol "<"
         |= tagName
         |. whiteSpace
         |= repeat zeroOrMore attribute
@@ -34,12 +34,8 @@ element =
             , succeed identity
                 |. symbol ">"
                 |. whiteSpace
-                |= children
+                |= lazy (\_ -> children)
             ]
-
-
-
--- |. whiteSpace
 
 
 tagName : Parser String
@@ -56,27 +52,84 @@ children =
             |. tagName
             |. whiteSpace
             |. symbol ">"
-        , lazy
-            (\_ ->
-                succeed (::)
-                    |= child
-                    |= children
-            )
+          -- , succeed (::)
+          --     |= element
+          --     |= lazy (\_ -> children)
+        , succeed (::)
+            |= map (String.join "" >> Text) (repeat oneOrMore textString)
+            |= lazy (\_ -> children)
         ]
 
 
-child : Parser Node
-child =
+textString : Parser String
+textString =
     oneOf
-        [ text
-          -- , lazy (\_ -> element)
+        [ map String.fromChar escapedChar
+        , nonEscapedString
         ]
 
 
-text : Parser Node
-text =
-    succeed Text
-        |= keep oneOrMore ((/=) '<')
+nonEscapedString : Parser String
+nonEscapedString =
+    keep oneOrMore (\c -> c /= '<' && c /= '&')
+
+
+escapedChar : Parser Char
+escapedChar =
+    succeed identity
+        |. symbol "&"
+        |= escapedCharHelp
+        |. symbol ";"
+
+
+escapedCharHelp : Parser Char
+escapedCharHelp =
+    oneOf
+        [ succeed Number
+            |. symbol "#"
+        , succeed Word
+        ]
+        |> andThen
+            (\escapeType ->
+                keep oneOrMore (\c -> c /= ';')
+                    |> andThen
+                        (\s ->
+                            case decodeEscape escapeType s of
+                                Ok c ->
+                                    succeed c
+
+                                Err s ->
+                                    fail s
+                        )
+            )
+
+
+type EscapeType
+    = Number
+    | Word
+
+
+decodeEscape : EscapeType -> String -> Result String Char
+decodeEscape escapeType s =
+    case escapeType of
+        Number ->
+            Hex.fromString s
+                |> Result.map Char.fromCode
+
+        Word ->
+            Dict.get s entities
+                |> Result.fromMaybe ("No entity named \"&" ++ s ++ ";\"")
+
+
+entities : Dict String Char
+entities =
+    Dict.fromList
+        [ "amp" => '&'
+        , "lt" => '<'
+        , "gt" => '>'
+        , "apos" => '\''
+        , "quot" => '"'
+        ]
 
 
 attribute : Parser Attribute
@@ -106,3 +159,11 @@ attributeValue =
 whiteSpace : Parser ()
 whiteSpace =
     ignore zeroOrMore ((==) ' ')
+
+
+
+-- POLYFILL
+
+
+(=>) =
+    (,)

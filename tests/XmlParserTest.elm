@@ -37,8 +37,8 @@ suite =
         , test "tagName unicode 2" <| expectSucceed "<😄/>" (Element "😄" [] [])
         , test "tagName surrogate pairs" <| expectSucceed "<𩸽/>" (Element "𩸽" [] [])
         , test "tagName 2" <| expectFail "</>"
-          -- , test "tagName 3" <| expectFail "<a>"
-          -- , test "tagName 4" <| expectFail "<1>"
+        , test "tagName 3" <| expectFail "<a>"
+        , test "tagName 4" <| expectFail "<1>"
         , test "attribute 1" <| expectSucceed """<a b=""/>""" (Element "a" [ Attribute "b" "" ] [])
         , test "attribute 2" <| expectSucceed """<a b="1=</>"/>""" (Element "a" [ Attribute "b" "1=</>" ] [])
         , test "attribute 3" <| expectFail """<a 1=""/>"""
