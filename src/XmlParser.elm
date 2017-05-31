@@ -21,27 +21,30 @@ parse source =
 element : Parser Node
 element =
     succeed Element
-        |. whiteSpace
-        |. symbol "<"
+        -- |. whiteSpace
+        |.
+            symbol "<"
         |= tagName
         |. whiteSpace
         |= repeat zeroOrMore attribute
         |. whiteSpace
-        |= (oneOf
-                [ succeed []
-                    |. symbol "/>"
-                , succeed identity
-                    |. symbol ">"
-                    |. whiteSpace
-                    |= children
-                ]
-           )
-        |. whiteSpace
+        |= oneOf
+            [ succeed []
+                |. symbol "/>"
+            , succeed identity
+                |. symbol ">"
+                |. whiteSpace
+                |= children
+            ]
+
+
+
+-- |. whiteSpace
 
 
 tagName : Parser String
 tagName =
-    keep oneOrMore (\c -> Char.isLower c)
+    keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'')
 
 
 children : Parser (List Node)
@@ -56,11 +59,17 @@ children =
         , lazy
             (\_ ->
                 succeed (::)
-                    |= element
+                    |= child
                     |= children
             )
-        , succeed List.singleton
-            |= text
+        ]
+
+
+child : Parser Node
+child =
+    oneOf
+        [ text
+          -- , lazy (\_ -> element)
         ]
 
 
@@ -90,7 +99,7 @@ attributeValue : Parser String
 attributeValue =
     succeed identity
         |. symbol "\""
-        |= keep oneOrMore ((/=) '"')
+        |= keep zeroOrMore ((/=) '"')
         |. symbol "\""
 
 

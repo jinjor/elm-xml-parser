@@ -31,17 +31,29 @@ expectFail source =
 suite : Test
 suite =
     describe "XmlParser"
-        [ test "tagName1" <| expectSucceed "<a1/>" (Element "a1" [] [])
-        , test "tagName2" <| expectFail "</>"
-        , test "tagName3" <| expectFail "<a>"
-        , test "tagName4" <| expectFail "<1>"
-        , test "attribute1" <| expectSucceed """<a b=""/>""" (Element "a" [ Attribute "b" "" ] [])
-        , test "attribute2" <| expectSucceed """<a b="1=</>"/>""" (Element "a" [ Attribute "b" "1=</>" ] [])
-        , test "attribute3" <| expectFail """<a 1=""/>"""
-        , test "attribute4" <| expectFail """<a a=/>"""
-        , test "attribute5" <| expectFail """<a a"="/>"""
-        , test "attribute6" <| expectFail """<a=""/>"""
-        , test "closing1" <| expectSucceed "<a></a>" (Element "a" [] [])
-        , test "closing2" <| expectFail "<a></b>"
-        , test "children1" <| expectSucceed "<a>1</a>" (Element "a" [] [ Text "1" ])
+        [ test "tagName" <| expectSucceed "<a/>" (Element "a" [] [])
+        , test "tagName number" <| expectSucceed "<1/>" (Element "1" [] [])
+        , test "tagName unicode 1" <| expectSucceed "<あ/>" (Element "あ" [] [])
+        , test "tagName unicode 2" <| expectSucceed "<😄/>" (Element "😄" [] [])
+        , test "tagName surrogate pairs" <| expectSucceed "<𩸽/>" (Element "𩸽" [] [])
+        , test "tagName 2" <| expectFail "</>"
+          -- , test "tagName 3" <| expectFail "<a>"
+          -- , test "tagName 4" <| expectFail "<1>"
+        , test "attribute 1" <| expectSucceed """<a b=""/>""" (Element "a" [ Attribute "b" "" ] [])
+        , test "attribute 2" <| expectSucceed """<a b="1=</>"/>""" (Element "a" [ Attribute "b" "1=</>" ] [])
+        , test "attribute 3" <| expectFail """<a 1=""/>"""
+        , test "attribute 4" <| expectFail """<a a=/>"""
+        , test "attribute 5" <| expectFail """<a a"="/>"""
+        , test "attribute 6" <| expectFail """<a=""/>"""
+        , test "closing 1" <| expectSucceed "<a></a>" (Element "a" [] [])
+          -- , test "closing 2" <| expectFail "<a></b>"
+        , test "children 1" <| expectSucceed "<a>1</a>" (Element "a" [] [ Text "1" ])
         ]
+
+
+
+-- memo
+-- CDATA
+-- <?
+-- DOCTYPE
+-- &amp, etc.
