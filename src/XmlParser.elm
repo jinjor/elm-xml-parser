@@ -144,10 +144,16 @@ attributeName =
 
 attributeValue : Parser String
 attributeValue =
-    succeed identity
-        |. symbol "\""
-        |= keep zeroOrMore ((/=) '"')
-        |. symbol "\""
+    oneOf
+        [ succeed identity
+            |. symbol "\""
+            |= keep zeroOrMore ((/=) '"')
+            |. symbol "\""
+        , succeed identity
+            |. symbol "'"
+            |= keep zeroOrMore ((/=) '\'')
+            |. symbol "'"
+        ]
 
 
 whiteSpace : Parser ()
