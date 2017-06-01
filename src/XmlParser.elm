@@ -56,6 +56,76 @@ processingInstructionValue =
         ]
 
 
+type alias DocType =
+    { rootElementName : String
+    , definition : DocTypeDefinition
+    }
+
+
+type DocTypeDefinition
+    = Public String String (Maybe String)
+    | System String (Maybe String)
+    | Custom String
+
+
+docType : Parser DocType
+docType =
+    succeed DocType
+        |. symbol "<!DOCTYPE"
+        |. whiteSpace
+        |= tagName
+        |. whiteSpace
+        |= docTypeDefinition
+        |. whiteSpace
+        |. symbol ">"
+
+
+docTypeDefinition : Parser DocTypeDefinition
+docTypeDefinition =
+    oneOf
+        [ succeed Public
+            |. keyword "PUBLIC"
+            |. whiteSpace
+            |= publicIdentifier
+            |. whiteSpace
+            |= docTypeExternalSubset
+            |. whiteSpace
+            |= oneOf [ map Just docTypeInternalSubset, succeed Nothing ]
+        , succeed System
+            |. keyword "SYSTEM"
+            |. whiteSpace
+            |= docTypeExternalSubset
+            |. whiteSpace
+            |= oneOf [ map Just docTypeInternalSubset, succeed Nothing ]
+        , succeed Custom
+            |= docTypeInternalSubset
+        ]
+
+
+publicIdentifier : Parser String
+publicIdentifier =
+    succeed identity
+        |. symbol "\""
+        |= keep zeroOrMore (\c -> c /= '"')
+        |. symbol "\""
+
+
+docTypeExternalSubset : Parser String
+docTypeExternalSubset =
+    succeed identity
+        |. symbol "\""
+        |= keep zeroOrMore (\c -> c /= '"')
+        |. symbol "\""
+
+
+docTypeInternalSubset : Parser String
+docTypeInternalSubset =
+    succeed identity
+        |. symbol "["
+        |= keep zeroOrMore (\c -> c /= ']')
+        |. symbol "]"
+
+
 cdata : Parser String
 cdata =
     succeed identity
