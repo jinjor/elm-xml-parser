@@ -6,6 +6,13 @@ import Dict exposing (Dict)
 import Hex
 
 
+type alias Xml =
+    { processingInstructions : List ProcessingInstruction
+    , docType : Maybe DocType
+    , root : Node
+    }
+
+
 type alias ProcessingInstruction =
     { name : String
     , value : String
@@ -21,9 +28,20 @@ type alias Attribute =
     { name : String, value : String }
 
 
-parse : String -> Result Parser.Error Node
+parse : String -> Result Parser.Error Xml
 parse source =
-    Parser.run element source
+    Parser.run xml source
+
+
+xml : Parser Xml
+xml =
+    succeed Xml
+        |= repeat zeroOrMore processingInstruction
+        |. whiteSpace
+        |= maybe docType
+        |. whiteSpace
+        |= element
+        |. end
 
 
 processingInstruction : Parser ProcessingInstruction
@@ -90,13 +108,13 @@ docTypeDefinition =
             |. whiteSpace
             |= docTypeExternalSubset
             |. whiteSpace
-            |= oneOf [ map Just docTypeInternalSubset, succeed Nothing ]
+            |= maybe docTypeInternalSubset
         , succeed System
             |. keyword "SYSTEM"
             |. whiteSpace
             |= docTypeExternalSubset
             |. whiteSpace
-            |= oneOf [ map Just docTypeInternalSubset, succeed Nothing ]
+            |= maybe docTypeInternalSubset
         , succeed Custom
             |= docTypeInternalSubset
         ]
@@ -181,7 +199,8 @@ tagName =
 children : Parser (List Node)
 children =
     oneOf
-        [ succeed []
+        [ andThen (\_ -> fail "") end
+        , succeed []
             |. symbol "</"
             |. whiteSpace
             |. tagName
@@ -196,30 +215,31 @@ children =
         , lazy
             (\_ ->
                 succeed (::)
-                    |= map (String.join "" >> Text) (repeat oneOrMore textString)
+                    |= map Text (textString '<')
                     |= children
             )
         ]
 
 
-textString : Parser String
-textString =
-    oneOf
-        [ maybeEscapedString
-        , nonEscapedString
-        ]
+textString : Char -> Parser String
+textString end =
+    keep zeroOrMore (\c -> c /= end && c /= '&')
+        |> andThen
+            (\s ->
+                oneOf
+                    [ succeed String.cons
+                        |= escapedChar end
+                        |= lazy (\_ -> textString end)
+                    , succeed s
+                    ]
+            )
 
 
-nonEscapedString : Parser String
-nonEscapedString =
-    keep oneOrMore (\c -> c /= '<' && c /= '&')
-
-
-maybeEscapedString : Parser String
-maybeEscapedString =
+escapedChar : Char -> Parser Char
+escapedChar end =
     succeed identity
         |. symbol "&"
-        |= keep oneOrMore (\c -> c /= '<' && c /= ';')
+        |= keep oneOrMore (\c -> c /= end && c /= ';')
         |> andThen
             (\s ->
                 oneOf
@@ -228,7 +248,7 @@ maybeEscapedString =
                             (\_ ->
                                 case decodeEscape s of
                                     Ok c ->
-                                        succeed (String.fromChar c)
+                                        succeed c
 
                                     Err e ->
                                         fail e
@@ -282,11 +302,11 @@ attributeValue =
     oneOf
         [ succeed identity
             |. symbol "\""
-            |= keep zeroOrMore ((/=) '"')
+            |= textString '"'
             |. symbol "\""
         , succeed identity
             |. symbol "'"
-            |= keep zeroOrMore ((/=) '\'')
+            |= textString '\''
             |. symbol "'"
         ]
 
@@ -294,6 +314,14 @@ attributeValue =
 whiteSpace : Parser ()
 whiteSpace =
     ignore zeroOrMore ((==) ' ')
+
+
+maybe : Parser a -> Parser (Maybe a)
+maybe parser =
+    oneOf
+        [ map Just parser
+        , succeed Nothing
+        ]
 
 
 
