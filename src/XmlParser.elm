@@ -175,20 +175,21 @@ cdataContent =
 
 element : Parser Node
 element =
-    succeed Element
-        |. symbol "<"
-        |= tagName
-        |. whiteSpace
-        |= repeat zeroOrMore attribute
-        |. whiteSpace
-        |= oneOf
-            [ succeed []
-                |. symbol "/>"
-            , succeed identity
-                |. symbol ">"
-                |. whiteSpace
-                |= lazy (\_ -> children)
-            ]
+    inContext "element" <|
+        succeed Element
+            |. symbol "<"
+            |= tagName
+            |. whiteSpace
+            |= repeat zeroOrMore attribute
+            |. whiteSpace
+            |= oneOf
+                [ succeed []
+                    |. symbol "/>"
+                , succeed identity
+                    |. symbol ">"
+                    |. whiteSpace
+                    |= lazy (\_ -> childrenFromText)
+                ]
 
 
 tagName : Parser String
@@ -196,43 +197,73 @@ tagName =
     keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
 
 
-children : Parser (List Node)
-children =
-    oneOf
-        [ andThen (\_ -> fail "") end
-        , succeed []
+childrenFromText : Parser (List Node)
+childrenFromText =
+    inContext "childrenFromText" <|
+        succeed
+            (\maybeString children ->
+                maybeString
+                    |> Maybe.map (Text >> List.singleton)
+                    |> Maybe.withDefault []
+                    |> (\text -> text ++ children)
+            )
+            |= maybeTextString '<'
+            |= lazy (\_ -> childrenFromElement)
+
+
+childrenFromElement : Parser (List Node)
+childrenFromElement =
+    inContext "childrenFromElement" <|
+        oneOf
+            [ succeed []
+                |. closingTag
+            , lazy
+                (\_ ->
+                    succeed (::)
+                        |= element
+                        |= childrenFromText
+                )
+            ]
+
+
+closingTag : Parser ()
+closingTag =
+    inContext "closingTag" <|
+        succeed ()
             |. symbol "</"
             |. whiteSpace
             |. tagName
             |. whiteSpace
             |. symbol ">"
-        , lazy
-            (\_ ->
-                succeed (::)
-                    |= element
-                    |= children
-            )
-        , lazy
-            (\_ ->
-                succeed (::)
-                    |= map Text (textString '<')
-                    |= children
-            )
-        ]
 
 
 textString : Char -> Parser String
 textString end =
-    keep zeroOrMore (\c -> c /= end && c /= '&')
-        |> andThen
+    inContext "textString" <|
+        (keep zeroOrMore (\c -> c /= end && c /= '&')
+            |> andThen
+                (\s ->
+                    oneOf
+                        [ succeed String.cons
+                            |= escapedChar end
+                            |= lazy (\_ -> textString end)
+                        , succeed s
+                        ]
+                )
+        )
+
+
+maybeTextString : Char -> Parser (Maybe String)
+maybeTextString end =
+    inContext "maybeTextString" <|
+        succeed
             (\s ->
-                oneOf
-                    [ succeed String.cons
-                        |= escapedChar end
-                        |= lazy (\_ -> textString end)
-                    , succeed s
-                    ]
+                if String.trim s == "" then
+                    Nothing
+                else
+                    Just s
             )
+            |= textString end
 
 
 escapedChar : Char -> Parser Char

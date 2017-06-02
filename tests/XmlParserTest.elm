@@ -38,8 +38,8 @@ suite =
         , test "tagName surrogate pairs" <| expectSucceed "<𩸽/>" (Element "𩸽" [] [])
         , test "tagName namespace" <| expectSucceed "<a:b/>" (Element "a:b" [] [])
         , test "tagName fail 1" <| expectFail "</>"
-          -- , test "tagName fail 2" <| expectFail "<a>"
-          -- , test "tagName fail 3" <| expectFail "<1>"
+        , test "tagName fail 2" <| expectFail "<a>"
+        , test "tagName fail 3" <| expectFail "<1>"
         , test "attribute 1" <| expectSucceed """<a b=""/>""" (Element "a" [ Attribute "b" "" ] [])
         , test "attribute 2" <| expectSucceed """<a b="1=</>"/>""" (Element "a" [ Attribute "b" "1=</>" ] [])
         , test "attribute quote 1" <| expectSucceed """<a b='""'/>""" (Element "a" [ Attribute "b" "\"\"" ] [])
@@ -69,10 +69,3 @@ suite =
                 (Element "a" [] [ Text "1", Element "b" [] [], Text "2", Element "c" [] [ Text "3" ], Text "4" ])
           -- , test "children element fail" <| expectFail "<a><b></a></a>"
         ]
-
-
-
--- memo
--- CDATA
--- <?
--- DOCTYPE
