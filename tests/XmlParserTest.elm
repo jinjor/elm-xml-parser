@@ -101,10 +101,16 @@ suite =
         , test "doc type public 2" <| expectDocType """<!DOCTYPE a PUBLIC "1" "2"><a/>""" (Just (DocType "a" (Public "1" "2" Nothing)))
         , test "doc type public 3" <| expectDocType """<!DOCTYPE a PUBLIC "" ""[]><a/>""" (Just (DocType "a" (Public "" "" (Just ""))))
         , test "doc type public 4" <| expectDocType """<!DOCTYPE a PUBLIC "" ""[a]><a/>""" (Just (DocType "a" (Public "" "" (Just "a"))))
-        , test "doc type public fail" <| expectFail """<!DOCTYPE a PUBLIC ""><a/>"""
+        , test "doc type public fail 1" <| expectFail """<!DOCTYPE a PUBLIC ""><a/>"""
+        , test "doc type public fail 2" <| expectFail """<!DOCTYPE PUBLIC "" ""><a/>"""
         , test "doc type system 1" <| expectDocType """<!DOCTYPE a SYSTEM ""><a/>""" (Just (DocType "a" (System "" Nothing)))
         , test "doc type system 2" <| expectDocType """<!DOCTYPE a SYSTEM "1"><a/>""" (Just (DocType "a" (System "1" Nothing)))
         , test "doc type system 3" <| expectDocType """<!DOCTYPE a SYSTEM "" []><a/>""" (Just (DocType "a" (System "" (Just ""))))
         , test "doc type system 4" <| expectDocType """<!DOCTYPE a SYSTEM "" [a]><a/>""" (Just (DocType "a" (System "" (Just "a"))))
-        , test "doc type system fail" <| expectFail """<!DOCTYPE a SYSTEM []><a/>"""
+        , test "doc type system fail 1" <| expectFail """<!DOCTYPE a SYSTEM []><a/>"""
+        , test "doc type system fail 2" <| expectFail """<!DOCTYPE SYSTEM "" []><a/>"""
+        , test "doc type custom 1" <| expectDocType """<!DOCTYPE a []><a/>""" (Just (DocType "a" (Custom "")))
+        , test "doc type custom 2" <| expectDocType """<!DOCTYPE a [a]><a/>""" (Just (DocType "a" (Custom "a")))
+        , test "doc type custom fail 1" <| expectFail """<!DOCTYPE a "" []><a/>"""
+        , test "doc type custom fail 2" <| expectFail """<!DOCTYPE []><a/>"""
         ]
