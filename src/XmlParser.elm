@@ -19,6 +19,18 @@ type alias ProcessingInstruction =
     }
 
 
+type alias DocType =
+    { rootElementName : String
+    , definition : DocTypeDefinition
+    }
+
+
+type DocTypeDefinition
+    = Public String String (Maybe String)
+    | System String (Maybe String)
+    | Custom String
+
+
 type Node
     = Element String (List Attribute) (List Node)
     | Text String
@@ -77,18 +89,6 @@ processingInstructionValue =
                 |= keep zeroOrMore (\c -> c /= '?')
                 |= lazy (\_ -> processingInstructionValue)
             ]
-
-
-type alias DocType =
-    { rootElementName : String
-    , definition : DocTypeDefinition
-    }
-
-
-type DocTypeDefinition
-    = Public String String (Maybe String)
-    | System String (Maybe String)
-    | Custom String
 
 
 docType : Parser DocType

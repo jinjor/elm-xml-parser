@@ -17,6 +17,17 @@ expectPI source pis =
                 Expect.fail (toString e)
 
 
+expectDocType : String -> Maybe DocType -> (() -> Expectation)
+expectDocType source docType =
+    \_ ->
+        case XmlParser.parse source of
+            Ok ast ->
+                Expect.equal ast.docType docType
+
+            Err e ->
+                Expect.fail (toString e)
+
+
 expectSucceed : String -> Node -> (() -> Expectation)
 expectSucceed source node =
     \_ ->
@@ -85,4 +96,15 @@ suite =
         , test "processing instruction 1" <| expectPI """<?xml a?><a/>""" [ ProcessingInstruction "xml" "a" ]
         , test "processing instruction 2" <| expectPI """<?xml a="b" c="d"?><a/>""" [ ProcessingInstruction "xml" "a=\"b\" c=\"d\"" ]
         , test "processing instruction 3" <| expectPI """<?xml ??><a/>""" [ ProcessingInstruction "xml" "?" ]
+        , test "processing instruction 4" <| expectPI """<?xml 1?2?><a/>""" [ ProcessingInstruction "xml" "1?2" ]
+        , test "doc type public 1" <| expectDocType """<!DOCTYPE a PUBLIC "" ""><a/>""" (Just (DocType "a" (Public "" "" Nothing)))
+        , test "doc type public 2" <| expectDocType """<!DOCTYPE a PUBLIC "1" "2"><a/>""" (Just (DocType "a" (Public "1" "2" Nothing)))
+        , test "doc type public 3" <| expectDocType """<!DOCTYPE a PUBLIC "" ""[]><a/>""" (Just (DocType "a" (Public "" "" (Just ""))))
+        , test "doc type public 4" <| expectDocType """<!DOCTYPE a PUBLIC "" ""[a]><a/>""" (Just (DocType "a" (Public "" "" (Just "a"))))
+        , test "doc type public fail" <| expectFail """<!DOCTYPE a PUBLIC ""><a/>"""
+        , test "doc type system 1" <| expectDocType """<!DOCTYPE a SYSTEM ""><a/>""" (Just (DocType "a" (System "" Nothing)))
+        , test "doc type system 2" <| expectDocType """<!DOCTYPE a SYSTEM "1"><a/>""" (Just (DocType "a" (System "1" Nothing)))
+        , test "doc type system 3" <| expectDocType """<!DOCTYPE a SYSTEM "" []><a/>""" (Just (DocType "a" (System "" (Just ""))))
+        , test "doc type system 4" <| expectDocType """<!DOCTYPE a SYSTEM "" [a]><a/>""" (Just (DocType "a" (System "" (Just "a"))))
+        , test "doc type system fail" <| expectFail """<!DOCTYPE a SYSTEM []><a/>"""
         ]
