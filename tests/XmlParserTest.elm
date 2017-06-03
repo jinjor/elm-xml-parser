@@ -79,7 +79,7 @@ suite =
         , test "attribute value escape 1" <| expectSucceed """<a a="&quot;"/>""" (Element "a" [ Attribute "a" "\"" ] [])
           -- , test "attribute fail same names" <| expectFail """<a b="" b=""/>"""
         , test "closing 1" <| expectSucceed "<a></a>" (Element "a" [] [])
-          -- , test "closing 2" <| expectFail "<a></b>"
+        , test "closing 2" <| expectFail "<a></b>"
         , test "children text" <| expectSucceed "<a>1</a>" (Element "a" [] [ Text "1" ])
         , test "children text escape 1" <| expectSucceed "<a>&amp;</a>" (Element "a" [] [ Text "&" ])
         , test "children text escape 2" <| expectSucceed "<a>&#x41;</a>" (Element "a" [] [ Text "A" ])
@@ -90,7 +90,8 @@ suite =
         , test "children element 3" <|
             expectSucceed "<a>1<b/>2<c>3</c>4</a>"
                 (Element "a" [] [ Text "1", Element "b" [] [], Text "2", Element "c" [] [ Text "3" ], Text "4" ])
-          -- , test "children element fail" <| expectFail "<a><b></a></a>"
+        , test "children element nested same tag" <| expectSucceed "<a><a></a></a>" (Element "a" [] [ Element "a" [] [] ])
+        , test "children element fail" <| expectFail "<a><b></a></a>"
         , test "no root" <| expectFail ""
         , test "many roots" <| expectFail "<a/><a/>"
         , test "processing instruction 0" <| expectPI """<?xml ?><a/>""" [ ProcessingInstruction "xml" "" ]

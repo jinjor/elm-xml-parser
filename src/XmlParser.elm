@@ -194,20 +194,25 @@ cdataContent =
 element : Parser Node
 element =
     inContext "element" <|
-        succeed Element
+        succeed identity
             |. symbol "<"
-            |= tagName
-            |. whiteSpace
-            |= repeat zeroOrMore attribute
-            |. whiteSpace
-            |= oneOf
-                [ succeed []
-                    |. symbol "/>"
-                , succeed identity
-                    |. symbol ">"
-                    |. whiteSpace
-                    |= lazy (\_ -> children)
-                ]
+            |= (tagName
+                    |> andThen
+                        (\startTagName ->
+                            succeed (Element startTagName)
+                                |. whiteSpace
+                                |= repeat zeroOrMore attribute
+                                |. whiteSpace
+                                |= oneOf
+                                    [ succeed []
+                                        |. symbol "/>"
+                                    , succeed identity
+                                        |. symbol ">"
+                                        |. whiteSpace
+                                        |= lazy (\_ -> children startTagName)
+                                    ]
+                        )
+               )
 
 
 tagName : Parser String
@@ -216,40 +221,48 @@ tagName =
         keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
 
 
-children : Parser (List Node)
-children =
+children : String -> Parser (List Node)
+children startTagName =
     inContext "children" <|
         oneOf
             [ succeed []
-                |. closingTag
+                |. closingTag startTagName
             , textNodeString
                 |> andThen
                     (\maybeString ->
                         case maybeString of
                             Just s ->
                                 succeed (\rest -> Text s :: rest)
-                                    |= children
+                                    |= children startTagName
 
                             Nothing ->
                                 succeed []
-                                    |. closingTag
+                                    |. closingTag startTagName
                     )
             , lazy
                 (\_ ->
                     succeed (::)
                         |= element
-                        |= children
+                        |= children startTagName
                 )
             ]
 
 
-closingTag : Parser ()
-closingTag =
+closingTag : String -> Parser ()
+closingTag startTagName =
     inContext "closingTag" <|
         succeed ()
             |. symbol "</"
             |. whiteSpace
-            |. tagName
+            |. (tagName
+                    |> andThen
+                        (\endTagName ->
+                            if startTagName == endTagName then
+                                succeed ()
+                            else
+                                fail ("tag name mismatch: " ++ startTagName ++ " and " ++ endTagName)
+                        )
+               )
             |. whiteSpace
             |. symbol ">"
 
