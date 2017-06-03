@@ -83,6 +83,7 @@ suite =
         , test "children text" <| expectSucceed "<a>1</a>" (Element "a" [] [ Text "1" ])
         , test "children text escape 1" <| expectSucceed "<a>&amp;</a>" (Element "a" [] [ Text "&" ])
         , test "children text escape 2" <| expectSucceed "<a>&#x41;</a>" (Element "a" [] [ Text "A" ])
+        , test "children text escape 3" <| expectSucceed "<a>&#65;</a>" (Element "a" [] [ Text "A" ])
         , test "children text escape fail" <| expectFail "<a>&&;</a>"
         , test "children element 1" <| expectSucceed "<a><b/></a>" (Element "a" [] [ Element "b" [] [] ])
         , test "children element 2" <| expectSucceed "<a><b/><c></c></a>" (Element "a" [] [ Element "b" [] [], Element "c" [] [] ])
@@ -121,6 +122,7 @@ suite =
         , test "cdata 6" <| expectSucceed "<a><![CDATA[b]]>c</a>" (Element "a" [] [ Text "bc" ])
         , test "cdata 7" <| expectSucceed "<a>a<![CDATA[]]>c</a>" (Element "a" [] [ Text "ac" ])
         , test "cdata 8" <| expectSucceed "<a>a<![CDATA[b]]>c</a>" (Element "a" [] [ Text "abc" ])
+        , test "whitespace" <| expectSucceed "\x0D\n\t <?xml ?>\x0D\n\t <!DOCTYPE a []>\x0D\n\t <a/>\x0D\n\t " (Element "a" [] [])
         ]
 
 

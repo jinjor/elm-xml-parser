@@ -49,11 +49,13 @@ xml : Parser Xml
 xml =
     inContext "xml" <|
         succeed Xml
+            |. whiteSpace
             |= repeat zeroOrMore processingInstruction
             |. whiteSpace
             |= maybe docType
             |. whiteSpace
             |= element
+            |. whiteSpace
             |. end
 
 
@@ -328,6 +330,11 @@ decodeEscape s =
             |> String.dropLeft 2
             |> Hex.fromString
             |> Result.map Char.fromCode
+    else if String.startsWith "#" s then
+        s
+            |> String.dropLeft 1
+            |> String.toInt
+            |> Result.map Char.fromCode
     else
         Dict.get s entities
             |> Result.fromMaybe ("No entity named \"&" ++ s ++ ";\" found.")
@@ -376,7 +383,7 @@ attributeValue =
 
 whiteSpace : Parser ()
 whiteSpace =
-    ignore zeroOrMore ((==) ' ')
+    ignore zeroOrMore (\c -> c == ' ' || c == '\x0D' || c == '\n' || c == '\t')
 
 
 maybe : Parser a -> Parser (Maybe a)
