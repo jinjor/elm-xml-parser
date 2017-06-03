@@ -201,7 +201,7 @@ element =
                 , succeed identity
                     |. symbol ">"
                     |. whiteSpace
-                    |= lazy (\_ -> childrenFromText)
+                    |= lazy (\_ -> children)
                 ]
 
 
@@ -211,23 +211,9 @@ tagName =
         keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
 
 
-childrenFromText : Parser (List Node)
-childrenFromText =
-    inContext "childrenFromText" <|
-        succeed
-            (\maybeString children ->
-                maybeString
-                    |> Maybe.map (Text >> List.singleton)
-                    |> Maybe.withDefault []
-                    |> (\text -> text ++ children)
-            )
-            |= maybeTextString '<'
-            |= lazy (\_ -> childrenFromElement)
-
-
-childrenFromElement : Parser (List Node)
-childrenFromElement =
-    inContext "childrenFromElement" <|
+children : Parser (List Node)
+children =
+    inContext "children" <|
         oneOf
             [ succeed []
                 |. closingTag
@@ -235,8 +221,20 @@ childrenFromElement =
                 (\_ ->
                     succeed (::)
                         |= element
-                        |= childrenFromText
+                        |= children
                 )
+            , textNodeString
+                |> andThen
+                    (\maybeString ->
+                        case maybeString of
+                            Just s ->
+                                succeed (\rest -> Text s :: rest)
+                                    |= children
+
+                            Nothing ->
+                                succeed []
+                                    |. closingTag
+                    )
             ]
 
 
@@ -265,6 +263,32 @@ textString end =
                         ]
                 )
         )
+
+
+textNodeString : Parser (Maybe String)
+textNodeString =
+    inContext "textString" <|
+        oneOf
+            [ succeed
+                (\s maybeString ->
+                    Just (s ++ (maybeString |> Maybe.withDefault ""))
+                )
+                |= keep oneOrMore (\c -> c /= '<' && c /= '&')
+                |= lazy (\_ -> textNodeString)
+            , succeed
+                (\c maybeString ->
+                    Just (String.cons c (maybeString |> Maybe.withDefault ""))
+                )
+                |= escapedChar '<'
+                |= lazy (\_ -> textNodeString)
+            , succeed
+                (\s maybeString ->
+                    Just (s ++ (maybeString |> Maybe.withDefault ""))
+                )
+                |= cdata
+                |= lazy (\_ -> textNodeString)
+            , succeed Nothing
+            ]
 
 
 maybeTextString : Char -> Parser (Maybe String)
