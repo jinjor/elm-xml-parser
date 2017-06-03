@@ -35,43 +35,48 @@ parse source =
 
 xml : Parser Xml
 xml =
-    succeed Xml
-        |= repeat zeroOrMore processingInstruction
-        |. whiteSpace
-        |= maybe docType
-        |. whiteSpace
-        |= element
-        |. end
+    inContext "xml" <|
+        succeed Xml
+            |= repeat zeroOrMore processingInstruction
+            |. whiteSpace
+            |= maybe docType
+            |. whiteSpace
+            |= element
+            |. end
 
 
 processingInstruction : Parser ProcessingInstruction
 processingInstruction =
-    succeed ProcessingInstruction
-        |. symbol "<?"
-        |= processingInstructionName
-        |. symbol " "
-        |= processingInstructionValue
-        |. symbol "?>"
+    inContext "processingInstruction" <|
+        succeed ProcessingInstruction
+            |. symbol "<?"
+            |= processingInstructionName
+            |. symbol " "
+            |= processingInstructionValue
 
 
 processingInstructionName : Parser String
 processingInstructionName =
-    keep oneOrMore (\c -> c /= ' ')
+    inContext "processingInstructionName" <|
+        keep oneOrMore (\c -> c /= ' ')
 
 
 processingInstructionValue : Parser String
 processingInstructionValue =
-    oneOf
-        [ succeed ""
-            |. symbol "?>"
-        , symbol "?"
-            |> andThen
-                (\_ ->
-                    processingInstructionName
-                        |> map (\tail -> "?" ++ tail)
-                )
-        , keep zeroOrMore (\c -> c /= '?')
-        ]
+    inContext "processingInstructionValue" <|
+        oneOf
+            [ succeed ""
+                |. symbol "?>"
+            , symbol "?"
+                |> andThen
+                    (\_ ->
+                        processingInstructionValue
+                            |> map (\tail -> "?" ++ tail)
+                    )
+            , succeed (++)
+                |= keep zeroOrMore (\c -> c /= '?')
+                |= lazy (\_ -> processingInstructionValue)
+            ]
 
 
 type alias DocType =
@@ -88,89 +93,96 @@ type DocTypeDefinition
 
 docType : Parser DocType
 docType =
-    succeed DocType
-        |. symbol "<!DOCTYPE"
-        |. whiteSpace
-        |= tagName
-        |. whiteSpace
-        |= docTypeDefinition
-        |. whiteSpace
-        |. symbol ">"
+    inContext "docType" <|
+        succeed DocType
+            |. symbol "<!DOCTYPE"
+            |. whiteSpace
+            |= tagName
+            |. whiteSpace
+            |= docTypeDefinition
+            |. whiteSpace
+            |. symbol ">"
 
 
 docTypeDefinition : Parser DocTypeDefinition
 docTypeDefinition =
-    oneOf
-        [ succeed Public
-            |. keyword "PUBLIC"
-            |. whiteSpace
-            |= publicIdentifier
-            |. whiteSpace
-            |= docTypeExternalSubset
-            |. whiteSpace
-            |= maybe docTypeInternalSubset
-        , succeed System
-            |. keyword "SYSTEM"
-            |. whiteSpace
-            |= docTypeExternalSubset
-            |. whiteSpace
-            |= maybe docTypeInternalSubset
-        , succeed Custom
-            |= docTypeInternalSubset
-        ]
+    inContext "docTypeDefinition" <|
+        oneOf
+            [ succeed Public
+                |. keyword "PUBLIC"
+                |. whiteSpace
+                |= publicIdentifier
+                |. whiteSpace
+                |= docTypeExternalSubset
+                |. whiteSpace
+                |= maybe docTypeInternalSubset
+            , succeed System
+                |. keyword "SYSTEM"
+                |. whiteSpace
+                |= docTypeExternalSubset
+                |. whiteSpace
+                |= maybe docTypeInternalSubset
+            , succeed Custom
+                |= docTypeInternalSubset
+            ]
 
 
 publicIdentifier : Parser String
 publicIdentifier =
-    succeed identity
-        |. symbol "\""
-        |= keep zeroOrMore (\c -> c /= '"')
-        |. symbol "\""
+    inContext "publicIdentifier" <|
+        succeed identity
+            |. symbol "\""
+            |= keep zeroOrMore (\c -> c /= '"')
+            |. symbol "\""
 
 
 docTypeExternalSubset : Parser String
 docTypeExternalSubset =
-    succeed identity
-        |. symbol "\""
-        |= keep zeroOrMore (\c -> c /= '"')
-        |. symbol "\""
+    inContext "docTypeExternalSubset" <|
+        succeed identity
+            |. symbol "\""
+            |= keep zeroOrMore (\c -> c /= '"')
+            |. symbol "\""
 
 
 docTypeInternalSubset : Parser String
 docTypeInternalSubset =
-    succeed identity
-        |. symbol "["
-        |= keep zeroOrMore (\c -> c /= ']')
-        |. symbol "]"
+    inContext "docTypeInternalSubset" <|
+        succeed identity
+            |. symbol "["
+            |= keep zeroOrMore (\c -> c /= ']')
+            |. symbol "]"
 
 
 cdata : Parser String
 cdata =
-    succeed identity
-        |. symbol "<![CDATA["
-        |= cdataContent
-        |. symbol "]]>"
+    inContext "cdata" <|
+        succeed identity
+            |. symbol "<![CDATA["
+            |= cdataContent
+            |. symbol "]]>"
 
 
 cdataContent : Parser String
 cdataContent =
-    oneOf
-        [ succeed ""
-            |. symbol "]]>"
-        , symbol "]]"
-            |> andThen
-                (\_ ->
-                    cdataContent
-                        |> map (\tail -> "]]" ++ tail)
-                )
-        , symbol "]"
-            |> andThen
-                (\_ ->
-                    cdataContent
-                        |> map (\tail -> "]" ++ tail)
-                )
-        , keep zeroOrMore (\c -> c /= ']')
-        ]
+    inContext "cdataContent" <|
+        oneOf
+            [ succeed ""
+                |. symbol "]]>"
+            , symbol "]]"
+                |> andThen
+                    (\_ ->
+                        cdataContent
+                            |> map (\tail -> "]]" ++ tail)
+                    )
+            , symbol "]"
+                |> andThen
+                    (\_ ->
+                        cdataContent
+                            |> map (\tail -> "]" ++ tail)
+                    )
+            , keep zeroOrMore (\c -> c /= ']')
+            ]
 
 
 element : Parser Node
@@ -194,7 +206,8 @@ element =
 
 tagName : Parser String
 tagName =
-    keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
+    inContext "tagName" <|
+        keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
 
 
 childrenFromText : Parser (List Node)

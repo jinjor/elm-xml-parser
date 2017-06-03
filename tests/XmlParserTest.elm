@@ -6,6 +6,17 @@ import Fuzz exposing (list, int, string)
 import XmlParser exposing (..)
 
 
+expectPI : String -> List ProcessingInstruction -> (() -> Expectation)
+expectPI source pis =
+    \_ ->
+        case XmlParser.parse source of
+            Ok ast ->
+                Expect.equal ast.processingInstructions pis
+
+            Err e ->
+                Expect.fail (toString e)
+
+
 expectSucceed : String -> Node -> (() -> Expectation)
 expectSucceed source node =
     \_ ->
@@ -68,4 +79,10 @@ suite =
             expectSucceed "<a>1<b/>2<c>3</c>4</a>"
                 (Element "a" [] [ Text "1", Element "b" [] [], Text "2", Element "c" [] [ Text "3" ], Text "4" ])
           -- , test "children element fail" <| expectFail "<a><b></a></a>"
+        , test "no root" <| expectFail ""
+        , test "many roots" <| expectFail "<a/><a/>"
+        , test "processing instruction 0" <| expectPI """<?xml ?><a/>""" [ ProcessingInstruction "xml" "" ]
+        , test "processing instruction 1" <| expectPI """<?xml a?><a/>""" [ ProcessingInstruction "xml" "a" ]
+        , test "processing instruction 2" <| expectPI """<?xml a="b" c="d"?><a/>""" [ ProcessingInstruction "xml" "a=\"b\" c=\"d\"" ]
+        , test "processing instruction 3" <| expectPI """<?xml ??><a/>""" [ ProcessingInstruction "xml" "?" ]
         ]
