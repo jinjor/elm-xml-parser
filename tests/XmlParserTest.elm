@@ -113,12 +113,12 @@ suite =
         , test "doc type custom 2" <| expectDocType """<!DOCTYPE a [a]><a/>""" (Just (DocType "a" (Custom "a")))
         , test "doc type custom fail 1" <| expectFail """<!DOCTYPE a "" []><a/>"""
         , test "doc type custom fail 2" <| expectFail """<!DOCTYPE []><a/>"""
-          -- , test "cdata 1" <| expectSucceed "<a><![CDATA[]]></a>" (Element "a" [] [])
+        , test "cdata 1" <| expectSucceed "<a><![CDATA[]]></a>" (Element "a" [] [])
         , test "cdata 2" <| expectSucceed "<a>a<![CDATA[]]></a>" (Element "a" [] [ Text "a" ])
-          -- , test "cdata 3" <| expectSucceed "<a><![CDATA[b]]></a>" (Element "a" [] [ Text "b" ])
-          -- , test "cdata 4" <| expectSucceed "<a><![CDATA[]]>c</a>" (Element "a" [] [ Text "c" ])
+        , test "cdata 3" <| expectSucceed "<a><![CDATA[b]]></a>" (Element "a" [] [ Text "b" ])
+        , test "cdata 4" <| expectSucceed "<a><![CDATA[]]>c</a>" (Element "a" [] [ Text "c" ])
         , test "cdata 5" <| expectSucceed "<a>a<![CDATA[b]]></a>" (Element "a" [] [ Text "ab" ])
-          -- , test "cdata 6" <| expectSucceed "<a><![CDATA[b]]>c</a>" (Element "a" [] [ Text "bc" ])
+        , test "cdata 6" <| expectSucceed "<a><![CDATA[b]]>c</a>" (Element "a" [] [ Text "bc" ])
         , test "cdata 7" <| expectSucceed "<a>a<![CDATA[]]>c</a>" (Element "a" [] [ Text "ac" ])
         , test "cdata 8" <| expectSucceed "<a>a<![CDATA[b]]>c</a>" (Element "a" [] [ Text "abc" ])
         ]

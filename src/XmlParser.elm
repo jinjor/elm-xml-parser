@@ -217,12 +217,6 @@ children =
         oneOf
             [ succeed []
                 |. closingTag
-            , lazy
-                (\_ ->
-                    succeed (::)
-                        |= element
-                        |= children
-                )
             , textNodeString
                 |> andThen
                     (\maybeString ->
@@ -235,6 +229,12 @@ children =
                                 succeed []
                                     |. closingTag
                     )
+            , lazy
+                (\_ ->
+                    succeed (::)
+                        |= element
+                        |= children
+                )
             ]
 
 
@@ -267,7 +267,7 @@ textString end =
 
 textNodeString : Parser (Maybe String)
 textNodeString =
-    inContext "textString" <|
+    inContext "textNodeString" <|
         oneOf
             [ succeed
                 (\s maybeString ->
@@ -283,25 +283,19 @@ textNodeString =
                 |= lazy (\_ -> textNodeString)
             , succeed
                 (\s maybeString ->
-                    Just (s ++ (maybeString |> Maybe.withDefault ""))
+                    let
+                        str =
+                            s ++ (maybeString |> Maybe.withDefault "")
+                    in
+                        if str /= "" then
+                            Just str
+                        else
+                            Nothing
                 )
                 |= cdata
                 |= lazy (\_ -> textNodeString)
             , succeed Nothing
             ]
-
-
-maybeTextString : Char -> Parser (Maybe String)
-maybeTextString end =
-    inContext "maybeTextString" <|
-        succeed
-            (\s ->
-                if String.trim s == "" then
-                    Nothing
-                else
-                    Just s
-            )
-            |= textString end
 
 
 escapedChar : Char -> Parser Char
