@@ -98,6 +98,8 @@ suite =
         , test "processing instruction 2" <| expectPI """<?xml a="b" c="d"?><a/>""" [ ProcessingInstruction "xml" "a=\"b\" c=\"d\"" ]
         , test "processing instruction 3" <| expectPI """<?xml ??><a/>""" [ ProcessingInstruction "xml" "?" ]
         , test "processing instruction 4" <| expectPI """<?xml 1?2?><a/>""" [ ProcessingInstruction "xml" "1?2" ]
+        , test "processing instruction multiple 1" <| expectPI """<?xml ?><?xml ?><a/>""" [ ProcessingInstruction "xml" "", ProcessingInstruction "xml" "" ]
+        , test "processing instruction multiple 2" <| expectPI """<?xml ?>\x0D\t <?xml ?><a/>""" [ ProcessingInstruction "xml" "", ProcessingInstruction "xml" "" ]
         , test "doc type public 1" <| expectDocType """<!DOCTYPE a PUBLIC "" ""><a/>""" (Just (DocType "a" (Public "" "" Nothing)))
         , test "doc type public 2" <| expectDocType """<!DOCTYPE a PUBLIC "1" "2"><a/>""" (Just (DocType "a" (Public "1" "2" Nothing)))
         , test "doc type public 3" <| expectDocType """<!DOCTYPE a PUBLIC "" ""[]><a/>""" (Just (DocType "a" (Public "" "" (Just ""))))

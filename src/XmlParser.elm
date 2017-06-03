@@ -50,8 +50,11 @@ xml =
     inContext "xml" <|
         succeed Xml
             |. whiteSpace
-            |= repeat zeroOrMore processingInstruction
-            |. whiteSpace
+            |= repeat zeroOrMore
+                (succeed identity
+                    |= processingInstruction
+                    |. whiteSpace
+                )
             |= maybe docType
             |. whiteSpace
             |= element
