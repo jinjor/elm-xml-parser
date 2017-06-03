@@ -160,7 +160,6 @@ cdata =
         succeed identity
             |. symbol "<![CDATA["
             |= cdataContent
-            |. symbol "]]>"
 
 
 cdataContent : Parser String
@@ -181,7 +180,9 @@ cdataContent =
                         cdataContent
                             |> map (\tail -> "]" ++ tail)
                     )
-            , keep zeroOrMore (\c -> c /= ']')
+            , succeed (++)
+                |= keep zeroOrMore (\c -> c /= ']')
+                |= lazy (\_ -> cdataContent)
             ]
 
 

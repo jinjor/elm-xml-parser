@@ -113,4 +113,5 @@ suite =
         , test "doc type custom 2" <| expectDocType """<!DOCTYPE a [a]><a/>""" (Just (DocType "a" (Custom "a")))
         , test "doc type custom fail 1" <| expectFail """<!DOCTYPE a "" []><a/>"""
         , test "doc type custom fail 2" <| expectFail """<!DOCTYPE []><a/>"""
+          -- , test "cdata" <| expectSucceed "<a>a<![CDATA[b]]>c</a>" (Element "a" [] [ Text "abc" ])
         ]
