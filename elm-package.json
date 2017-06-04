@@ -6,7 +6,7 @@
     "source-directories": [
         "src"
     ],
-    "exposed-modules": [],
+    "exposed-modules": [ "XmlParser" ],
     "dependencies": {
         "elm-lang/core": "5.1.1 <= v < 6.0.0",
         "elm-tools/parser": "2.0.1 <= v < 3.0.0",

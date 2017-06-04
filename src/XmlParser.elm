@@ -33,8 +33,8 @@ import Hex
 {-| This represents the entire XML structure.
 
 * processingInstructions: `<?xml-stylesheet type="text/xsl" href="style.xsl"?>`
-* docType `<!DOCTYPE root SYSTEM "foo.xml">`
-* root `<root><foo/></root>`
+* docType: `<!DOCTYPE root SYSTEM "foo.xml">`
+* root: `<root><foo/></root>`
 
 -}
 type alias Xml =
@@ -80,7 +80,7 @@ type DocTypeDefinition
     | Custom String
 
 
-{-| Node such as `<a name="value">foo</a>` or `<a/>`
+{-| Node is either a element such as `<a name="value">foo</a>` or text such as `foo`.
 -}
 type Node
     = Element String (List Attribute) (List Node)
