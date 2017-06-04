@@ -1,6 +1,6 @@
 {
     "version": "1.0.0",
-    "summary": "helpful summary of your project, less than 80 characters",
+    "summary": "XML Parser for Elm",
     "repository": "https://github.com/jinjor/elm-xml-parser.git",
     "license": "BSD3",
     "source-directories": [
