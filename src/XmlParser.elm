@@ -10,6 +10,18 @@ module XmlParser
         , format
         )
 
+{-| The XML Parser.
+
+# Types
+@docs Xml, ProcessingInstruction, DocType, DocTypeDefinition, Node, Attribute
+
+# Parse
+@docs parse
+
+# Format
+@docs format
+-}
+
 import Parser exposing (..)
 import Char
 import Regex
@@ -18,6 +30,13 @@ import Dict exposing (Dict)
 import Hex
 
 
+{-| This represents the entire XML structure.
+
+* processingInstructions: `<?xml-stylesheet type="text/xsl" href="style.xsl"?>`
+* docType `<!DOCTYPE root SYSTEM "foo.xml">`
+* root `<root><foo/></root>`
+
+-}
 type alias Xml =
     { processingInstructions : List ProcessingInstruction
     , docType : Maybe DocType
@@ -25,33 +44,66 @@ type alias Xml =
     }
 
 
+{-| Processing Instruction such as `<?xml-stylesheet type="text/xsl" href="style.xsl"?>`.
+
+The example above is parsed as `{ name = "xml-stylesheet", value = "type=\"text/xsl\" href=\"style.xsl\"" }`.
+The value (presudo attributes) should be parsed by application.
+
+-}
 type alias ProcessingInstruction =
     { name : String
     , value : String
     }
 
 
+{-| Doc Type Decralation starting with "<!DOCTYPE".
+
+This contains root element name and rest of details as `DocTypeDefinition`.
+
+-}
 type alias DocType =
     { rootElementName : String
     , definition : DocTypeDefinition
     }
 
 
+{-| DTD (Doc Type Definition)
+
+* Public: `<!DOCTYPE root PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">`
+* System: `<!DOCTYPE root SYSTEM "foo.xml">`
+* Custom: `<!DOCTYPE root [ <!ELEMENT ...> ]>`
+
+-}
 type DocTypeDefinition
     = Public String String (Maybe String)
     | System String (Maybe String)
     | Custom String
 
 
+{-| Node such as `<a name="value">foo</a>` or `<a/>`
+-}
 type Node
     = Element String (List Attribute) (List Node)
     | Text String
 
 
+{-| Attribute such as `name="value"`
+-}
 type alias Attribute =
     { name : String, value : String }
 
 
+{-| Parse XML string.
+
+`<?xml ... ?>` and `<!DOCTYPE ... >` is optional so you don't need to ensure them.
+
+```
+> import XmlParser
+> XmlParser.parse """<a name="value">foo</a>"""
+Ok { processingInstructions = [], docType = Nothing, root = Element "a" ([{ name = "name", value = "value" }]) ([Text "foo"]) }
+```
+
+-}
 parse : String -> Result Parser.Error Xml
 parse source =
     Parser.run xml source
@@ -482,6 +534,11 @@ comment =
 -- FORMAT
 
 
+{-| Convert Xml into String.
+
+This function does NOT insert line breaks or indents for readability.
+
+-}
 format : Xml -> String
 format xml =
     let
