@@ -7,10 +7,12 @@ module XmlParser
         , Node(..)
         , Attribute
         , parse
+        , format
         )
 
 import Parser exposing (..)
 import Char
+import Regex
 import Set exposing (Set)
 import Dict exposing (Dict)
 import Hex
@@ -474,6 +476,109 @@ comment : Parser ()
 comment =
     symbol "<!--"
         |. ignoreUntil "-->"
+
+
+
+-- FORMAT
+
+
+format : Xml -> String
+format xml =
+    let
+        pi =
+            xml.processingInstructions
+                |> List.map formatProcessingInstruction
+                |> String.join ""
+
+        dt =
+            xml.docType
+                |> Maybe.map formatDocType
+                |> Maybe.withDefault ""
+
+        node =
+            formatNode xml.root
+    in
+        pi ++ dt ++ node
+
+
+formatProcessingInstruction : ProcessingInstruction -> String
+formatProcessingInstruction processingInstruction =
+    "<?" ++ escape processingInstruction.name ++ " " ++ escape processingInstruction.value ++ "?>"
+
+
+formatDocType : DocType -> String
+formatDocType docType =
+    "<!DOCTYPE " ++ escape docType.rootElementName ++ " " ++ formatDocTypeDefinition docType.definition ++ ">"
+
+
+formatDocTypeDefinition : DocTypeDefinition -> String
+formatDocTypeDefinition def =
+    case def of
+        Public publicIdentifier internalSubsetRef maybeInternalSubset ->
+            "PUBLIC \""
+                ++ escape publicIdentifier
+                ++ "\" \""
+                ++ escape internalSubsetRef
+                ++ "\""
+                ++ (case maybeInternalSubset of
+                        Just internalSubset ->
+                            " [" ++ escape internalSubset ++ "]"
+
+                        Nothing ->
+                            ""
+                   )
+
+        System internalSubsetRef maybeInternalSubset ->
+            "SYSTEM \""
+                ++ escape internalSubsetRef
+                ++ "\""
+                ++ (case maybeInternalSubset of
+                        Just internalSubset ->
+                            " [" ++ escape internalSubset ++ "]"
+
+                        Nothing ->
+                            ""
+                   )
+
+        Custom internalSubset ->
+            "[" ++ escape internalSubset ++ "]"
+
+
+formatNode : Node -> String
+formatNode node =
+    case node of
+        Element tagName attributes children ->
+            "<"
+                ++ escape tagName
+                ++ " "
+                ++ (attributes |> List.map formatAttribute |> String.join " ")
+                ++ (if children == [] then
+                        "/>"
+                    else
+                        ">"
+                            ++ (children |> List.map formatNode |> String.join "")
+                            ++ "</"
+                            ++ escape tagName
+                            ++ ">"
+                   )
+
+        Text s ->
+            escape s
+
+
+formatAttribute : Attribute -> String
+formatAttribute attribute =
+    escape attribute.name ++ "=\"" ++ escape attribute.value ++ "\""
+
+
+escape : String -> String
+escape s =
+    s
+        |> Regex.replace Regex.All (Regex.regex "&") (\_ -> "&amp;")
+        |> Regex.replace Regex.All (Regex.regex "<") (\_ -> "&lt;")
+        |> Regex.replace Regex.All (Regex.regex ">") (\_ -> "&gt;")
+        |> Regex.replace Regex.All (Regex.regex "\"") (\_ -> "&quot;")
+        |> Regex.replace Regex.All (Regex.regex "'") (\_ -> "&apos;")
 
 
 

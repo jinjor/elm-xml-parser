@@ -50,6 +50,21 @@ expectFail source =
                 Expect.pass
 
 
+testFormat : Xml -> (() -> Expectation)
+testFormat xml =
+    \_ ->
+        XmlParser.format xml
+            |> XmlParser.parse
+            |> (\result ->
+                    case result of
+                        Ok xml2 ->
+                            Expect.equal xml xml2
+
+                        Err e ->
+                            Expect.fail (toString e)
+               )
+
+
 suite : Test
 suite =
     describe "XmlParser"
@@ -144,6 +159,27 @@ suite =
         , test "comment 4" <| expectSucceed "<a><!-----------></a>" (Element "a" [] [])
         , test "comment 5" <| expectSucceed "<!DOCTYPE a []><!----><a/><!---->" (Element "a" [] [])
         , test "comment 6" <| expectSucceed "<!----><!DOCTYPE a []><!----><a/><!---->" (Element "a" [] [])
+        , test "format 1" <|
+            testFormat
+                (Xml [] Nothing <|
+                    Element "a" [ Attribute "b" "c", Attribute "d" "e" ] [ Element "f" [] [], Text "g", Element "h" [] [] ]
+                )
+        , test "format 2" <| testFormat (Xml [] Nothing <| Element "a" [] [])
+        , test "format 3" <| testFormat (Xml [] Nothing <| Element "😄" [ Attribute "😄" "&><'\"" ] [ Text "&><'\"" ])
+        , test "format 4" <| testFormat (Xml [] (Just (DocType "1" <| Public "a" "b" Nothing)) <| Element "a" [] [])
+        , test "format 5" <| testFormat (Xml [] (Just (DocType "1" <| Public "a" "b" (Just "c"))) <| Element "a" [] [])
+        , test "format 6" <| testFormat (Xml [] (Just (DocType "1" <| System "a" Nothing)) <| Element "a" [] [])
+        , test "format 7" <| testFormat (Xml [] (Just (DocType "1" <| System "a" (Just "b"))) <| Element "a" [] [])
+        , test "format 8" <| testFormat (Xml [] (Just (DocType "1" <| Custom "")) <| Element "a" [] [])
+        , test "format 9" <|
+            testFormat
+                (Xml
+                    [ ProcessingInstruction "a" "b"
+                    , ProcessingInstruction "c" "d"
+                    ]
+                    Nothing
+                    (Element "a" [] [])
+                )
         ]
 
 
