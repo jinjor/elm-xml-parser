@@ -1,0 +1,55 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>XmlParser Demo</title>
+  <style>
+    html,
+    head,
+    body {
+      padding: 0;
+      margin: 0;
+    }
+
+    body {
+      font-family: calibri, helvetica, arial, sans-serif;
+    }
+  </style>
+  <script src="./script.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.0/ace.js"></script>
+</head>
+
+<body>
+  <script type="text/javascript">
+    var app = Elm.Demo.fullscreen();
+    setTimeout(function() {
+      var editor = ace.edit('editor');
+      editor.setTheme("ace/theme/monokai");
+      editor.getSession().setMode("ace/mode/xml");
+      editor.on("change", function(e) {
+        app.ports.input.send(editor.getValue());
+      });
+      app.ports.init.send(editor.getValue());
+      var commandKey = false;
+      window.addEventListener('keydown', function(e) {
+        if (e.keyCode == 91 || e.keyCode == 93 || e.keyCode == 224 || e.keyCode == 17) {
+          commandKey = true;
+        }
+      }, true);
+      window.addEventListener('keyup', function(e) {
+        if (e.keyCode == 91 || e.keyCode == 93 || e.keyCode == 224 || e.keyCode == 17) {
+          commandKey = false;
+        }
+      }, true);
+      window.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || commandKey) && e.keyCode == 83) {
+          e.preventDefault();
+          app.ports.parse.send({});
+        }
+      }, true);
+    });
+  </script>
+</body>
+
+</html>
