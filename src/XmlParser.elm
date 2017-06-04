@@ -1,4 +1,13 @@
-module XmlParser exposing (..)
+module XmlParser
+    exposing
+        ( Xml
+        , ProcessingInstruction
+        , DocType
+        , DocTypeDefinition(..)
+        , Node(..)
+        , Attribute
+        , parse
+        )
 
 import Parser exposing (..)
 import Char
@@ -435,11 +444,6 @@ attributeValue =
 whiteSpace : Parser ()
 whiteSpace =
     ignore zeroOrMore isWhitespace
-
-
-whiteSpace1 : Parser ()
-whiteSpace1 =
-    ignore oneOrMore isWhitespace
 
 
 isWhitespace : Char -> Bool

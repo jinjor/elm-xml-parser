@@ -106,16 +106,19 @@ suite =
         , test "doc type public 4" <| expectDocType """<!DOCTYPE a PUBLIC "" ""[a]><a/>""" (Just (DocType "a" (Public "" "" (Just "a"))))
         , test "doc type public fail 1" <| expectFail """<!DOCTYPE a PUBLIC ""><a/>"""
         , test "doc type public fail 2" <| expectFail """<!DOCTYPE PUBLIC "" ""><a/>"""
+        , test "doc type public fail 3" <| expectFail """<!DOCTYPEPUBLIC "" ""><a/>"""
         , test "doc type system 1" <| expectDocType """<!DOCTYPE a SYSTEM ""><a/>""" (Just (DocType "a" (System "" Nothing)))
         , test "doc type system 2" <| expectDocType """<!DOCTYPE a SYSTEM "1"><a/>""" (Just (DocType "a" (System "1" Nothing)))
         , test "doc type system 3" <| expectDocType """<!DOCTYPE a SYSTEM "" []><a/>""" (Just (DocType "a" (System "" (Just ""))))
         , test "doc type system 4" <| expectDocType """<!DOCTYPE a SYSTEM "" [a]><a/>""" (Just (DocType "a" (System "" (Just "a"))))
         , test "doc type system fail 1" <| expectFail """<!DOCTYPE a SYSTEM []><a/>"""
         , test "doc type system fail 2" <| expectFail """<!DOCTYPE SYSTEM "" []><a/>"""
+        , test "doc type system fail 3" <| expectFail """<!DOCTYPESYSTEM "" []><a/>"""
         , test "doc type custom 1" <| expectDocType """<!DOCTYPE a []><a/>""" (Just (DocType "a" (Custom "")))
         , test "doc type custom 2" <| expectDocType """<!DOCTYPE a [a]><a/>""" (Just (DocType "a" (Custom "a")))
         , test "doc type custom fail 1" <| expectFail """<!DOCTYPE a "" []><a/>"""
         , test "doc type custom fail 2" <| expectFail """<!DOCTYPE []><a/>"""
+        , test "doc type whitespace" <| expectDocType "<!DOCTYPE\na\nPUBLIC\n\"\"\n\"\"><a/>" (Just (DocType "a" (Public "" "" Nothing)))
         , test "cdata 1" <| expectSucceed "<a><![CDATA[]]></a>" (Element "a" [] [])
         , test "cdata 2" <| expectSucceed "<a>a<![CDATA[]]></a>" (Element "a" [] [ Text "a" ])
         , test "cdata 3" <| expectSucceed "<a><![CDATA[b]]></a>" (Element "a" [] [ Text "b" ])
@@ -140,11 +143,6 @@ suite =
 
 
 {-
+   For referrence
    http://www.oracle.com/technetwork/articles/wang-whitespace-092897.html
-
-   xml:space
-    preserve|default
-   xsl:strip-space
-   xsl:preserve-space
-   normalize-space()
 -}
