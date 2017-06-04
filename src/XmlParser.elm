@@ -2,6 +2,7 @@ module XmlParser exposing (..)
 
 import Parser exposing (..)
 import Char
+import Set exposing (Set)
 import Dict exposing (Dict)
 import Hex
 
@@ -201,7 +202,7 @@ element =
                         (\startTagName ->
                             succeed (Element startTagName)
                                 |. whiteSpace
-                                |= repeat zeroOrMore attribute
+                                |= attributes Set.empty
                                 |. whiteSpace
                                 |= oneOf
                                     [ succeed []
@@ -213,6 +214,35 @@ element =
                                     ]
                         )
                )
+
+
+attributes : Set String -> Parser (List Attribute)
+attributes keys =
+    oneOf
+        [ attribute
+            |> andThen
+                (\attr ->
+                    if Set.member attr.name keys then
+                        fail ("attribute " ++ attr.name ++ " is duplicated")
+                    else
+                        succeed ((::) attr)
+                            |= attributes (Set.insert attr.name keys)
+                )
+        , succeed []
+        ]
+
+
+validateAttributes : Set String -> List Attribute -> Maybe String
+validateAttributes keys attrs =
+    case attrs of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            if Set.member x.name keys then
+                Just x.name
+            else
+                validateAttributes (Set.insert x.name keys) xs
 
 
 tagName : Parser String

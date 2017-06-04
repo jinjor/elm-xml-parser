@@ -77,7 +77,7 @@ suite =
         , test "attribute fail 4" <| expectFail """<a b c=""/>"""
         , test "attribute fail 5" <| expectFail """<a= b=""/>"""
         , test "attribute value escape 1" <| expectSucceed """<a a="&quot;"/>""" (Element "a" [ Attribute "a" "\"" ] [])
-          -- , test "attribute fail same names" <| expectFail """<a b="" b=""/>"""
+        , test "attribute fail same names" <| expectFail """<a b="" b=""/>"""
         , test "closing 1" <| expectSucceed "<a></a>" (Element "a" [] [])
         , test "closing 2" <| expectFail "<a></b>"
         , test "children text" <| expectSucceed "<a>1</a>" (Element "a" [] [ Text "1" ])
