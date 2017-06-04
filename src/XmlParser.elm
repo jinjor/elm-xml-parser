@@ -66,9 +66,9 @@ xml =
                     |. whiteSpace
                 )
             |= maybe docType
-            |. whiteSpace
+            |. repeat zeroOrMore (oneOf [ whiteSpace1, comment ])
             |= element
-            |. whiteSpace
+            |. repeat zeroOrMore (oneOf [ whiteSpace1, comment ])
             |. end
 
 
@@ -321,6 +321,19 @@ textNodeString =
                 )
                 |= cdata
                 |= lazy (\_ -> textNodeString)
+            , succeed
+                (\maybeString ->
+                    let
+                        str =
+                            maybeString |> Maybe.withDefault ""
+                    in
+                        if str /= "" then
+                            Just str
+                        else
+                            Nothing
+                )
+                |. comment
+                |= lazy (\_ -> textNodeString)
             , succeed Nothing
             ]
 
@@ -446,9 +459,24 @@ whiteSpace =
     ignore zeroOrMore isWhitespace
 
 
+whiteSpace1 : Parser ()
+whiteSpace1 =
+    ignore oneOrMore isWhitespace
+
+
 isWhitespace : Char -> Bool
 isWhitespace c =
     c == ' ' || c == '\x0D' || c == '\n' || c == '\t'
+
+
+comment : Parser ()
+comment =
+    symbol "<!--"
+        |. ignoreUntil "-->"
+
+
+
+-- UTILITY
 
 
 maybe : Parser a -> Parser (Maybe a)

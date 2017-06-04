@@ -138,6 +138,12 @@ suite =
         , test "whitespace 7" <| expectSucceed "<a> <![CDATA[]]> </a>" (Element "a" [] [ Text "  " ])
         , test "whitespace 8" <| expectSucceed "<a> <![CDATA[ ]]> </a>" (Element "a" [] [ Text "   " ])
         , test "whitespace 9" <| expectSucceed "<a>\n<![CDATA[\n]]>\n</a>" (Element "a" [] [ Text "\n\n\n" ])
+        , test "comment 1" <| expectSucceed "<a>a<!--b-->c</a>" (Element "a" [] [ Text "ac" ])
+        , test "comment 2" <| expectSucceed "<a><!----></a>" (Element "a" [] [])
+        , test "comment 3" <| expectFail "<a><!---></a>"
+        , test "comment 4" <| expectSucceed "<a><!-----------></a>" (Element "a" [] [])
+        , test "comment 5" <| expectSucceed "<!DOCTYPE a []><!----><a/><!---->" (Element "a" [] [])
+          -- , test "comment 6" <| expectSucceed "<!----><!DOCTYPE a []><!----><a/><!---->" (Element "a" [] [])
         ]
 
 
