@@ -59,9 +59,10 @@ suite =
         , test "tagName unicode 2" <| expectSucceed "<😄/>" (Element "😄" [] [])
         , test "tagName surrogate pairs" <| expectSucceed "<𩸽/>" (Element "𩸽" [] [])
         , test "tagName namespace" <| expectSucceed "<a:b/>" (Element "a:b" [] [])
-        , test "tagName fail 1" <| expectFail "</>"
-        , test "tagName fail 2" <| expectFail "<a>"
-        , test "tagName fail 3" <| expectFail "<1>"
+        , test "element fail 1" <| expectFail "</>"
+        , test "element fail 2" <| expectFail "<a>"
+        , test "element fail 3" <| expectFail "<1>"
+        , test "element fail 4" <| expectFail "<a></b>"
         , test "attribute 1" <| expectSucceed """<a b=""/>""" (Element "a" [ Attribute "b" "" ] [])
         , test "attribute 2" <| expectSucceed """<a b="1=</>"/>""" (Element "a" [ Attribute "b" "1=</>" ] [])
         , test "attribute quote 1" <| expectSucceed """<a b='""'/>""" (Element "a" [ Attribute "b" "\"\"" ] [])
@@ -78,8 +79,6 @@ suite =
         , test "attribute fail 5" <| expectFail """<a= b=""/>"""
         , test "attribute value escape 1" <| expectSucceed """<a a="&quot;"/>""" (Element "a" [ Attribute "a" "\"" ] [])
         , test "attribute fail same names" <| expectFail """<a b="" b=""/>"""
-        , test "closing 1" <| expectSucceed "<a></a>" (Element "a" [] [])
-        , test "closing 2" <| expectFail "<a></b>"
         , test "children text" <| expectSucceed "<a>1</a>" (Element "a" [] [ Text "1" ])
         , test "children text escape 1" <| expectSucceed "<a>&amp;</a>" (Element "a" [] [ Text "&" ])
         , test "children text escape 2" <| expectSucceed "<a>&#x41;</a>" (Element "a" [] [ Text "A" ])
@@ -125,7 +124,17 @@ suite =
         , test "cdata 6" <| expectSucceed "<a><![CDATA[b]]>c</a>" (Element "a" [] [ Text "bc" ])
         , test "cdata 7" <| expectSucceed "<a>a<![CDATA[]]>c</a>" (Element "a" [] [ Text "ac" ])
         , test "cdata 8" <| expectSucceed "<a>a<![CDATA[b]]>c</a>" (Element "a" [] [ Text "abc" ])
-        , test "whitespace" <| expectSucceed "\x0D\n\t <?xml ?>\x0D\n\t <!DOCTYPE a []>\x0D\n\t <a/>\x0D\n\t " (Element "a" [] [])
+        , test "whitespace 1" <| expectSucceed "\x0D\n\t <?xml ?>\x0D\n\t <!DOCTYPE a []>\x0D\n\t <a/>\x0D\n\t " (Element "a" [] [])
+        , test "whitespace 2" <|
+            expectSucceed "<a\x0D\n\tb\x0D\n\t=\x0D\n\t\"c\"\x0D\n\td\x0D\n\t=\x0D\n\t\"e\"/>"
+                (Element "a" [ Attribute "b" "c", Attribute "d" "e" ] [])
+        , test "whitespace 3" <| expectSucceed "<a></a>" (Element "a" [] [])
+        , test "whitespace 4" <| expectSucceed "<a> </a>" (Element "a" [] [ Text " " ])
+        , test "whitespace 5" <| expectSucceed "<a>\x0D\n\t</a>" (Element "a" [] [ Text "\x0D\n\t" ])
+        , test "whitespace 6" <| expectSucceed "<a><![CDATA[ ]]></a>" (Element "a" [] [ Text " " ])
+        , test "whitespace 7" <| expectSucceed "<a> <![CDATA[]]> </a>" (Element "a" [] [ Text "  " ])
+        , test "whitespace 8" <| expectSucceed "<a> <![CDATA[ ]]> </a>" (Element "a" [] [ Text "   " ])
+        , test "whitespace 9" <| expectSucceed "<a>\n<![CDATA[\n]]>\n</a>" (Element "a" [] [ Text "\n\n\n" ])
         ]
 
 

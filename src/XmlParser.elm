@@ -209,46 +209,16 @@ element =
                                         |. symbol "/>"
                                     , succeed identity
                                         |. symbol ">"
-                                        |. whiteSpace
                                         |= lazy (\_ -> children startTagName)
                                     ]
                         )
                )
 
 
-attributes : Set String -> Parser (List Attribute)
-attributes keys =
-    oneOf
-        [ attribute
-            |> andThen
-                (\attr ->
-                    if Set.member attr.name keys then
-                        fail ("attribute " ++ attr.name ++ " is duplicated")
-                    else
-                        succeed ((::) attr)
-                            |= attributes (Set.insert attr.name keys)
-                )
-        , succeed []
-        ]
-
-
-validateAttributes : Set String -> List Attribute -> Maybe String
-validateAttributes keys attrs =
-    case attrs of
-        [] ->
-            Nothing
-
-        x :: xs ->
-            if Set.member x.name keys then
-                Just x.name
-            else
-                validateAttributes (Set.insert x.name keys) xs
-
-
 tagName : Parser String
 tagName =
     inContext "tagName" <|
-        keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
+        keep oneOrMore (\c -> not (isWhitespace c) && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
 
 
 children : String -> Parser (List Node)
@@ -348,25 +318,27 @@ textNodeString =
 
 escapedChar : Char -> Parser Char
 escapedChar end =
-    succeed identity
-        |. symbol "&"
-        |= keep oneOrMore (\c -> c /= end && c /= ';')
-        |> andThen
-            (\s ->
-                oneOf
-                    [ symbol ";"
-                        |> andThen
-                            (\_ ->
-                                case decodeEscape s of
-                                    Ok c ->
-                                        succeed c
+    inContext "escapedChar" <|
+        (succeed identity
+            |. symbol "&"
+            |= keep oneOrMore (\c -> c /= end && c /= ';')
+            |> andThen
+                (\s ->
+                    oneOf
+                        [ symbol ";"
+                            |> andThen
+                                (\_ ->
+                                    case decodeEscape s of
+                                        Ok c ->
+                                            succeed c
 
-                                    Err e ->
-                                        fail e
-                            )
-                    , fail ("Entities must end with \";\": &" ++ s)
-                    ]
-            )
+                                        Err e ->
+                                            fail e
+                                )
+                        , fail ("Entities must end with \";\": &" ++ s)
+                        ]
+                )
+        )
 
 
 decodeEscape : String -> Result String Char
@@ -397,39 +369,82 @@ entities =
         ]
 
 
+attributes : Set String -> Parser (List Attribute)
+attributes keys =
+    inContext "attributes" <|
+        oneOf
+            [ attribute
+                |> andThen
+                    (\attr ->
+                        if Set.member attr.name keys then
+                            fail ("attribute " ++ attr.name ++ " is duplicated")
+                        else
+                            succeed ((::) attr)
+                                |. whiteSpace
+                                |= attributes (Set.insert attr.name keys)
+                    )
+            , succeed []
+            ]
+
+
+validateAttributes : Set String -> List Attribute -> Maybe String
+validateAttributes keys attrs =
+    case attrs of
+        [] ->
+            Nothing
+
+        x :: xs ->
+            if Set.member x.name keys then
+                Just x.name
+            else
+                validateAttributes (Set.insert x.name keys) xs
+
+
 attribute : Parser Attribute
 attribute =
-    succeed Attribute
-        |= attributeName
-        |. whiteSpace
-        |. symbol "="
-        |. whiteSpace
-        |= attributeValue
-        |. whiteSpace
+    inContext "attribute" <|
+        succeed Attribute
+            |= attributeName
+            |. whiteSpace
+            |. symbol "="
+            |. whiteSpace
+            |= attributeValue
 
 
 attributeName : Parser String
 attributeName =
-    keep oneOrMore (\c -> c /= ' ' && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
+    inContext "attributeName" <|
+        keep oneOrMore (\c -> not (isWhitespace c) && c /= '/' && c /= '<' && c /= '>' && c /= '"' && c /= '\'' && c /= '=')
 
 
 attributeValue : Parser String
 attributeValue =
-    oneOf
-        [ succeed identity
-            |. symbol "\""
-            |= textString '"'
-            |. symbol "\""
-        , succeed identity
-            |. symbol "'"
-            |= textString '\''
-            |. symbol "'"
-        ]
+    inContext "attributeValue" <|
+        oneOf
+            [ succeed identity
+                |. symbol "\""
+                |= textString '"'
+                |. symbol "\""
+            , succeed identity
+                |. symbol "'"
+                |= textString '\''
+                |. symbol "'"
+            ]
 
 
 whiteSpace : Parser ()
 whiteSpace =
-    ignore zeroOrMore (\c -> c == ' ' || c == '\x0D' || c == '\n' || c == '\t')
+    ignore zeroOrMore isWhitespace
+
+
+whiteSpace1 : Parser ()
+whiteSpace1 =
+    ignore oneOrMore isWhitespace
+
+
+isWhitespace : Char -> Bool
+isWhitespace c =
+    c == ' ' || c == '\x0D' || c == '\n' || c == '\t'
 
 
 maybe : Parser a -> Parser (Maybe a)
