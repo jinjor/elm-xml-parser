@@ -143,7 +143,7 @@ suite =
         , test "comment 3" <| expectFail "<a><!---></a>"
         , test "comment 4" <| expectSucceed "<a><!-----------></a>" (Element "a" [] [])
         , test "comment 5" <| expectSucceed "<!DOCTYPE a []><!----><a/><!---->" (Element "a" [] [])
-          -- , test "comment 6" <| expectSucceed "<!----><!DOCTYPE a []><!----><a/><!---->" (Element "a" [] [])
+        , test "comment 6" <| expectSucceed "<!----><!DOCTYPE a []><!----><a/><!---->" (Element "a" [] [])
         ]
 
 

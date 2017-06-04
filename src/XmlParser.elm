@@ -65,6 +65,7 @@ xml =
                     |= processingInstruction
                     |. whiteSpace
                 )
+            |. repeat zeroOrMore (oneOf [ whiteSpace1, comment ])
             |= maybe docType
             |. repeat zeroOrMore (oneOf [ whiteSpace1, comment ])
             |= element
