@@ -2,7 +2,6 @@ module XmlParser exposing
     ( Xml, ProcessingInstruction, DocType, DocTypeDefinition(..), Node(..), Attribute
     , parse
     , format
-    , Count(..), Parser, deadEndsToString
     )
 
 {-| The XML Parser.
@@ -95,15 +94,25 @@ type alias Attribute =
     { name : String, value : String }
 
 
+type alias Parser a =
+    Advanced.Parser String Parser.Problem a
+
+
+type alias DeadEnd =
+    Advanced.DeadEnd String Parser.Problem
+
+
+type Count
+    = AtLeast Int
+
+
 {-| Parse XML string.
 
 `<?xml ... ?>` and `<!DOCTYPE ... >` is optional so you don't need to ensure them.
 
-```
-> import XmlParser
-> XmlParser.parse """<a name="value">foo</a>"""
-Ok { processingInstructions = [], docType = Nothing, root = Element "a" ([{ name = "name", value = "value" }]) ([Text "foo"]) }
-```
+    > import XmlParser
+    > XmlParser.parse """<a name="value">foo</a>"""
+    Ok { processingInstructions = [], docType = Nothing, root = Element "a" ([{ name = "name", value = "value" }]) ([Text "foo"]) }
 
 -}
 parse : String -> Result (List DeadEnd) Xml
@@ -662,23 +671,6 @@ maybe parser =
         [ map Just parser
         , succeed Nothing
         ]
-
-
-type alias Parser a =
-    Advanced.Parser String Parser.Problem a
-
-
-type alias DeadEnd =
-    Advanced.DeadEnd String Parser.Problem
-
-
-deadEndsToString : List DeadEnd -> String
-deadEndsToString deadends =
-    String.join " " (List.map (\deadend -> "{ row = " ++ String.fromInt deadend.row ++ ", col = " ++ String.fromInt deadend.col ++ ", " ++ Debug.toString deadend.problem ++ "}") deadends)
-
-
-type Count
-    = AtLeast Int
 
 
 zeroOrMore : Count

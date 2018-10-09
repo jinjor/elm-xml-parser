@@ -186,6 +186,9 @@ suite =
         ]
 
 
+deadEndsToString : List (Parser.Advanced.DeadEnd String Parser.Problem) -> String
+deadEndsToString deadends =
+    String.join " " (List.map (\deadend -> "{ row = " ++ String.fromInt deadend.row ++ ", col = " ++ String.fromInt deadend.col ++ ", " ++ Debug.toString deadend.problem ++ "}") deadends)
 
 {-
    For referrence
