@@ -1,8 +1,10 @@
-module XmlParserTest exposing (..)
+module XmlParserTest exposing (expectDocType, expectFail, expectPI, expectSucceed, suite, testFormat)
 
-import Test exposing (..)
 import Expect exposing (Expectation)
-import Fuzz exposing (list, int, string)
+import Fuzz exposing (int, list, string)
+import Parser as Parser
+import Parser.Advanced exposing ((|.))
+import Test exposing (..)
 import XmlParser exposing (..)
 
 
@@ -14,7 +16,7 @@ expectPI source pis =
                 Expect.equal ast.processingInstructions pis
 
             Err e ->
-                Expect.fail (toString e)
+                Expect.fail (deadEndsToString e)
 
 
 expectDocType : String -> Maybe DocType -> (() -> Expectation)
@@ -25,7 +27,7 @@ expectDocType source docType =
                 Expect.equal ast.docType docType
 
             Err e ->
-                Expect.fail (toString e)
+                Expect.fail (deadEndsToString e)
 
 
 expectSucceed : String -> Node -> (() -> Expectation)
@@ -36,7 +38,7 @@ expectSucceed source node =
                 Expect.equal ast.root node
 
             Err e ->
-                Expect.fail (toString e)
+                Expect.fail (deadEndsToString e)
 
 
 expectFail : String -> (() -> Expectation)
@@ -44,7 +46,7 @@ expectFail source =
     \_ ->
         case XmlParser.parse source of
             Ok ast ->
-                Expect.fail ("Unexpectedly succeeded: " ++ toString ast)
+                Expect.fail ("Unexpectedly succeeded: " ++ format ast)
 
             Err e ->
                 Expect.pass
@@ -61,7 +63,8 @@ testFormat xml =
                             Expect.equal xml xml2
 
                         Err e ->
-                            Expect.fail (toString e)
+                            Expect.fail ""
+                --(Parser.deadEndsToString e)
                )
 
 
@@ -114,7 +117,7 @@ suite =
         , test "processing instruction 3" <| expectPI """<?xml ??><a/>""" [ ProcessingInstruction "xml" "?" ]
         , test "processing instruction 4" <| expectPI """<?xml 1?2?><a/>""" [ ProcessingInstruction "xml" "1?2" ]
         , test "processing instruction multiple 1" <| expectPI """<?xml ?><?xml ?><a/>""" [ ProcessingInstruction "xml" "", ProcessingInstruction "xml" "" ]
-        , test "processing instruction multiple 2" <| expectPI """<?xml ?>\x0D\t <?xml ?><a/>""" [ ProcessingInstruction "xml" "", ProcessingInstruction "xml" "" ]
+        , test "processing instruction multiple 2" <| expectPI """<?xml ?>\u{000D}\t <?xml ?><a/>""" [ ProcessingInstruction "xml" "", ProcessingInstruction "xml" "" ]
         , test "doc type public 1" <| expectDocType """<!DOCTYPE a PUBLIC "" ""><a/>""" (Just (DocType "a" (Public "" "" Nothing)))
         , test "doc type public 2" <| expectDocType """<!DOCTYPE a PUBLIC "1" "2"><a/>""" (Just (DocType "a" (Public "1" "2" Nothing)))
         , test "doc type public 3" <| expectDocType """<!DOCTYPE a PUBLIC "" ""[]><a/>""" (Just (DocType "a" (Public "" "" (Just ""))))
@@ -142,13 +145,13 @@ suite =
         , test "cdata 6" <| expectSucceed "<a><![CDATA[b]]>c</a>" (Element "a" [] [ Text "bc" ])
         , test "cdata 7" <| expectSucceed "<a>a<![CDATA[]]>c</a>" (Element "a" [] [ Text "ac" ])
         , test "cdata 8" <| expectSucceed "<a>a<![CDATA[b]]>c</a>" (Element "a" [] [ Text "abc" ])
-        , test "whitespace 1" <| expectSucceed "\x0D\n\t <?xml ?>\x0D\n\t <!DOCTYPE a []>\x0D\n\t <a/>\x0D\n\t " (Element "a" [] [])
+        , test "whitespace 1" <| expectSucceed "\u{000D}\n\t <?xml ?>\u{000D}\n\t <!DOCTYPE a []>\u{000D}\n\t <a/>\u{000D}\n\t " (Element "a" [] [])
         , test "whitespace 2" <|
-            expectSucceed "<a\x0D\n\tb\x0D\n\t=\x0D\n\t\"c\"\x0D\n\td\x0D\n\t=\x0D\n\t\"e\"/>"
+            expectSucceed "<a\u{000D}\n\tb\u{000D}\n\t=\u{000D}\n\t\"c\"\u{000D}\n\td\u{000D}\n\t=\u{000D}\n\t\"e\"/>"
                 (Element "a" [ Attribute "b" "c", Attribute "d" "e" ] [])
         , test "whitespace 3" <| expectSucceed "<a></a>" (Element "a" [] [])
         , test "whitespace 4" <| expectSucceed "<a> </a>" (Element "a" [] [ Text " " ])
-        , test "whitespace 5" <| expectSucceed "<a>\x0D\n\t</a>" (Element "a" [] [ Text "\x0D\n\t" ])
+        , test "whitespace 5" <| expectSucceed "<a>\u{000D}\n\t</a>" (Element "a" [] [ Text "\u{000D}\n\t" ])
         , test "whitespace 6" <| expectSucceed "<a><![CDATA[ ]]></a>" (Element "a" [] [ Text " " ])
         , test "whitespace 7" <| expectSucceed "<a> <![CDATA[]]> </a>" (Element "a" [] [ Text "  " ])
         , test "whitespace 8" <| expectSucceed "<a> <![CDATA[ ]]> </a>" (Element "a" [] [ Text "   " ])
@@ -183,6 +186,9 @@ suite =
         ]
 
 
+deadEndsToString : List (Parser.Advanced.DeadEnd String Parser.Problem) -> String
+deadEndsToString deadends =
+    String.join " " (List.map (\deadend -> "{ row = " ++ String.fromInt deadend.row ++ ", col = " ++ String.fromInt deadend.col ++ ", " ++ Debug.toString deadend.problem ++ "}") deadends)
 
 {-
    For referrence
