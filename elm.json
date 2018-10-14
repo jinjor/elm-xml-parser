@@ -1,7 +1,7 @@
 {
     "type": "package",
     "name": "jinjor/elm-xml-parser",
-    "summary": "helpful summary of your project, less than 80 characters",
+    "summary": "XML Parser for Elm",
     "license": "BSD-3-Clause",
     "version": "1.1.0",
     "exposed-modules": [
